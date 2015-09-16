@@ -1,5 +1,6 @@
 #pragma once
 #include <regex>
+#include <type_traits>
 #include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/wstringize.hpp>
@@ -17,14 +18,27 @@ namespace rstring
 		{
 			//first copy the strings which do not exist in this resource
 			std::cout << "New strings:" << std::endl;
-			std::copy_if(resource._strings.begin(), resource._strings.end(), std::inserter(_strings, _strings.end()),
-				[this](const Map::value_type & value) {
-				if (_strings.count(value.first) != 0)
-					if (_strings[value.first] != TextString())
-						return false;
-				print(value);
-				return true;
-			});
+			for (auto rightStringPair : resource._strings) {
+				//if the string persists in this resource and is not empty than we continue
+				if (_strings.count(rightStringPair.first) != 0) {
+					if (_strings[rightStringPair.first] != TextString() || !std::is_same<_IdChar, _TextChar>::value) {
+						continue;
+					} else {
+						//erase the empty string
+						Resource::_strings.erase(rightStringPair.first);
+					}
+				}
+				if (rightStringPair.second == TextString()) {
+					//if the new string has an empty second value
+					//and if its left and right types are the same
+					//we use the left value to initialize the right one
+					typedef std::conditional<std::is_same<_IdChar, _TextChar>::value, DuplicatesPair<_IdChar>, Resource::Map::value_type>::type Value;
+					_strings.insert(print(Value(rightStringPair.first, TextString())));
+				} else {
+					_strings.insert(print(rightStringPair));
+				}
+
+			}
 
 			//then suggest what to do about conflicting strings
 			std::cout << "Conflicting strings:" << std::endl;
@@ -55,7 +69,7 @@ namespace rstring
 			//print the strings which exist in this resource but not in the right one
 			std::cout << "Orphaned strings:" << std::endl;
 			for (auto stringsPair : _strings) {
-				if (resource._strings.count(stringsPair.first)==0) {
+				if (resource._strings.count(stringsPair.first) == 0) {
 					print(stringsPair);
 				}
 			}
@@ -92,7 +106,6 @@ namespace rstring
 			}
 		}
 	protected:
-
 		//////////////////////////////////////////////////////////////////////////
 		//type-specific helpers
 		//////////////////////////////////////////////////////////////////////////
@@ -136,13 +149,25 @@ namespace rstring
 			std::wcout << string;
 		}
 
-		static void print(typename Map::value_type value)
+		static typename const Map::value_type & print(typename const Map::value_type & value)
 		{
 			std::cout << "\"";
 			print(value.first);
 			std::cout << "\" - \"";
 			print(value.second);
 			std::cout << "\"" << std::endl;
+			return value;
 		}
+		template<class _Char>
+		class DuplicatesPair : public std::pair<std::basic_string<_Char>, std::basic_string<_Char>>
+		{
+		public:
+			typedef std::basic_string<_Char> String;
+			typedef std::pair<String, String> Pair;
+			DuplicatesPair(const String & string,
+				const String & notUsing) : Pair(string, string)
+			{}
+		};
+
 	};
 }
