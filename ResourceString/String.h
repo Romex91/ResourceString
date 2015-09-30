@@ -178,7 +178,7 @@ namespace rstring
 		template<class Archive>
 		void load(Archive & ar, const unsigned int version)
 		{
-			_idString::size_type id;
+			size_t id;
 			ar >> BOOST_SERIALIZATION_NVP(id);
 			_idString = getResource().getStringId(id);
 			ar >> BOOST_SERIALIZATION_NVP(_simpleArguments);

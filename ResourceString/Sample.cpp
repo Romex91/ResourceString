@@ -1,6 +1,8 @@
 #include <fstream>
 #include <boost/archive/xml_woarchive.hpp>
 #include <boost/archive/xml_wiarchive.hpp>
+#include <boost/archive/text_woarchive.hpp>
+#include <boost/archive/text_wiarchive.hpp>
 
 #define PRINT_RESOURCE_STRINGS
 #include "rstring.h"
@@ -33,12 +35,36 @@ void usageSample()
 	archive >> boost::serialization::make_nvp("strings", resource);;
 	_rstrw_t::setResource(resource);
 
+	std::cout << "strings before serialization:" << std::endl;
 	auto string1 = _rstrw("simple string without arguments");
-	auto string2 = _rstrw("string containing some arguments : int {0}, float {1}, string {2} ", 2, 2.1f, "foo");
+	auto string2 = _rstrw("string containing some arguments : int {0}, float {1}, string {2}", 2, 2.1f, "foo");
 	auto string3 = _rstrw(R"(string containing another resource string : "{0}")", string2);
+
+
 	std::wcout << string1.str() << std::endl;
 	std::wcout << string2.str() << std::endl;
 	std::wcout << string3.str() << std::endl;
+	
+	std::wstringstream ss;
+	auto outputArchive = boost::archive::text_woarchive(ss);
+	outputArchive << string1;
+	outputArchive << string2;
+	outputArchive << string3;
+
+	std::wcout << "serialized strings:" << std::endl
+		<< ss.str() << std::endl;
+
+	auto inputArcchive = boost::archive::text_wiarchive(ss);
+	_rstrw_t string4, string5, string6;
+	inputArcchive >> string4;
+	inputArcchive >> string5;
+	inputArcchive >> string6;
+
+	std::cout << "strings after serialization:" << std::endl;
+	std::wcout << string4.str() << std::endl;
+	std::wcout << string5.str() << std::endl;
+	std::wcout << string6.str() << std::endl;
+
 }
 
 void updateResourceFile() 
