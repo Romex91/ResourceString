@@ -7,6 +7,29 @@
 #include "Resource.h"
 namespace rstring
 {
+	namespace helpers
+	{
+		template<class _SrcString, class _DestString >
+		_DestString convert(const _SrcString & string)
+		{
+			return string;
+		}
+
+		template<>
+		std::string convert<std::wstring, std::string>(const std::wstring & string)
+		{
+			return std::wstring_convert<std::codecvt<wchar_t, char, std::mbstate_t>>().to_bytes(string);
+		}
+
+		template<>
+		std::wstring convert<std::string, std::wstring>(const std::string & string)
+		{
+			return std::wstring_convert<std::codecvt<wchar_t, char, std::mbstate_t>>().from_bytes(string);
+		}
+
+
+	}
+
 	//resource string
 	//purposes of this class:
 	// - simple text formatting
@@ -138,7 +161,7 @@ namespace rstring
 		}
 
 		//save an argument of a simple type
-		template < typename Argument>
+		template <typename Argument>
 		void initializeArguments(size_t index, const Argument & argument)
 		{
 			TextStringStream ss;
@@ -147,12 +170,15 @@ namespace rstring
 		}
 
 		//save a nested resource string as an argument
-		template <>
-		void initializeArguments<This>(size_t index, const This & argument)
+		void initializeArguments(size_t index, const This & argument)
 		{
 			_nestedStringArguments[index] = argument;
 		}
 
+		void initializeArguments(size_t index, const IdString & argument)
+		{
+			_simpleArguments[index] = helpers::convert<IdString, TextString>(argument);
+		}
 		//////////////////////////////////////////////////////////////////////////
 		//boost serialization methods
 		//////////////////////////////////////////////////////////////////////////
@@ -179,5 +205,6 @@ namespace rstring
 		BOOST_SERIALIZATION_SPLIT_MEMBER();
 
 	};
-	
+
+
 }

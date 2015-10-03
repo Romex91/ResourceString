@@ -5,10 +5,10 @@
 
 namespace rstring {
 
-#define _rstr(stringConstant,...) String<char, char>::Construct(RESOURCE_STRING_CONSTANT(stringConstant), ##__VA_ARGS__)
-#define _rstrw(stringConstant,...) String<char, wchar_t>::Construct(RESOURCE_STRING_CONSTANT(stringConstant), ##__VA_ARGS__)
-#define _wrstr(stringConstant,...) String<wchar_t, char>::Construct(BOOST_PP_CAT(L, RESOURCE_STRING_CONSTANT(stringConstant)), ##__VA_ARGS__)
-#define _wrstrw(stringConstant,...) String<wchar_t, wchar_t>::Construct(BOOST_PP_CAT(L, RESOURCE_STRING_CONSTANT(stringConstant)), ##__VA_ARGS__)
+#define _rstr(stringConstant,...) rstring::String<char, char>::Construct(RESOURCE_STRING_CONSTANT(stringConstant), ##__VA_ARGS__)
+#define _rstrw(stringConstant,...) rstring::String<char, wchar_t>::Construct(RESOURCE_STRING_CONSTANT(stringConstant), ##__VA_ARGS__)
+#define _wrstr(stringConstant,...) rstring::String<wchar_t, char>::Construct(BOOST_PP_CAT(L, RESOURCE_STRING_CONSTANT(stringConstant)), ##__VA_ARGS__)
+#define _wrstrw(stringConstant,...) rstring::String<wchar_t, wchar_t>::Construct(BOOST_PP_CAT(L, RESOURCE_STRING_CONSTANT(stringConstant)), ##__VA_ARGS__)
 
 
 	typedef String<char, char> _rstr_t;

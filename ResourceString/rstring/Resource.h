@@ -64,7 +64,7 @@ namespace rstring
 
 		typename Map::const_iterator find(const IdString & s) const
 		{
-			Map::const_iterator retval;
+			typename Map::const_iterator retval;
 			for (retval = _strings.begin(); retval < _strings.end(); retval++)
 			{
 				if ( boost::algorithm::trim_all_copy(retval->first) ==
@@ -86,9 +86,9 @@ namespace rstring
 		template<class Archive>
 		void save(Archive & ar, const unsigned int version) const
 		{
-			Map::size_type stringsNumber = _strings.size();
+			size_t stringsNumber = _strings.size();
 			ar & BOOST_SERIALIZATION_NVP(stringsNumber);
-			for each (auto string in _strings)
+			for (auto & string : _strings)
 			{
 				ar & BOOST_SERIALIZATION_NVP(string);
 			}
@@ -98,11 +98,11 @@ namespace rstring
 		void load(Archive & ar, const unsigned int version)
 		{
 			_strings.clear();
-			Map::size_type stringsNumber;
+			size_t stringsNumber;
 			ar & BOOST_SERIALIZATION_NVP(stringsNumber);
-			for (Map::size_type i = 0; i < stringsNumber; i++)
+			for (size_t i = 0; i < stringsNumber; i++)
 			{
-				Map::value_type string;
+				typename Map::value_type string;
 				ar & BOOST_SERIALIZATION_NVP(string);
 				_strings.insert(string);
 			}

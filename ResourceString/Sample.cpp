@@ -43,7 +43,7 @@ void usageSample()
 	//so the only correct way to create a string is using macro _rstrw
 	//it would print the string at the compile time if PRINT_RESOURCE_STRINGS is defined
 	auto string1 = _rstrw("simple string without arguments");
-	auto string2 = _rstrw("string containing some arguments : int {0}, float {1}, string {2}", 2, 2.1f, "foo");
+	auto string2 = _rstrw("string containing some arguments : int {0}, float {1}, string {2}", 2, 2.1f, std::string("foo"));
 	auto string3 = _rstrw(R"(string containing another resource string : "{0}")", string2);
 
 	//to get strings translated we call the str() method
