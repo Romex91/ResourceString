@@ -1,7 +1,7 @@
 #pragma once
-#include "String.h"
-#include "EditableResource.h"
-#include "Defines.h"
+#include "rstring/String.h"
+#include "rstring/EditableResource.h"
+#include "rstring/Defines.h"
 
 namespace rstring {
 

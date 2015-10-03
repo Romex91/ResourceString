@@ -135,11 +135,11 @@
     </BuildLog>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Defines.h" />
-    <ClInclude Include="EditableResource.h" />
+    <ClInclude Include="rstring\Defines.h" />
+    <ClInclude Include="rstring\EditableResource.h" />
     <ClInclude Include="rstring.h" />
-    <ClInclude Include="String.h" />
-    <ClInclude Include="Resource.h" />
+    <ClInclude Include="rstring\String.h" />
+    <ClInclude Include="rstring\Resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Sample.cpp" />
