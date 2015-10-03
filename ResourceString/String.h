@@ -7,7 +7,7 @@
 #include "Resource.h"
 namespace rstring
 {
-	//resource string.
+	//resource string
 	//purposes of this class:
 	// - simple text formatting
 	// - easy language selection
@@ -59,10 +59,10 @@ namespace rstring
 		//public methods
 		//////////////////////////////////////////////////////////////////////////
 
-		//translate format string and fill it with the arguments passed to the constructor
+		//translate format string and fill it with the arguments earlier passed to the constructor
 		TextString str()const
 		{
-			TextString format = getResource().getText(_idString);
+			TextString format = resource().getText(_idString);
 			for (auto simpleArgument : _simpleArguments) 
 			{
 				TextStringStream ss;
@@ -79,17 +79,11 @@ namespace rstring
 			return format;
 		}
 		
-		//switch the language
-		static void setResource(const _Resource & resource) 
+		//a resource containing format strings translations 
+		static _Resource & resource()
 		{
-			_resource() = &resource;
-		}
-
-		static const _Resource & getResource()
-		{
-			if (_resource() == nullptr)
-				throw std::exception("error: call the String::setResource method before operating the string");
-			return *_resource();
+			static _Resource _resource;
+			return _resource;
 		}
 
 	protected:
@@ -97,13 +91,8 @@ namespace rstring
 		//protected data
 		//////////////////////////////////////////////////////////////////////////
 
-		//a resource file containing format strings translations. 
-		static const _Resource * & _resource(){
-			static const _Resource * resource = nullptr;
-			return resource;
-		};
-
-		//contains arguments of the type String
+		//nested resource string
+		//contains arguments of the same type
 		std::map<size_t, This> _nestedStringArguments;
 
 		//contains arguments of other types converted to the type TextString
@@ -116,8 +105,11 @@ namespace rstring
 		//hidden constructors
 		//////////////////////////////////////////////////////////////////////////
 
-		//we hide constructors and use static function instead to forbid constructions like "String<char,char> foo();" 
-		//this is necessary when printing string constants to the compiler output
+		//the problem is there are two ways of calling constructors in C++:
+		// - String<char,char> foo([some arguments]);
+		// - String<char,char> foo = String<char,char>([some arguments]);
+		//since we want to print string constants at the compile time the first one is inappropriate
+		//so we hide constructors at all and use static function Construct instead
 
 		//constructor with multiple arguments
 		//idString should contain placeholders similar to {0}
@@ -154,7 +146,7 @@ namespace rstring
 			_simpleArguments[index] = ss.str();
 		}
 
-		//save an argument of the type resource string
+		//save a nested resource string as an argument
 		template <>
 		void initializeArguments<This>(size_t index, const This & argument)
 		{
@@ -169,7 +161,7 @@ namespace rstring
 		template<class Archive>
 		void save(Archive & ar, const unsigned int version) const
 		{
-			auto id = getResource().getId(_idString);
+			auto id = resource().getId(_idString);
 			ar << BOOST_SERIALIZATION_NVP(id);
 			ar << BOOST_SERIALIZATION_NVP(_simpleArguments);
 			ar << BOOST_SERIALIZATION_NVP(_nestedStringArguments);
@@ -180,7 +172,7 @@ namespace rstring
 		{
 			size_t id;
 			ar >> BOOST_SERIALIZATION_NVP(id);
-			_idString = getResource().getStringId(id);
+			_idString = resource().getStringId(id);
 			ar >> BOOST_SERIALIZATION_NVP(_simpleArguments);
 			ar >> BOOST_SERIALIZATION_NVP(_nestedStringArguments);
 		}

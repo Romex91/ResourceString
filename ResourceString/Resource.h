@@ -2,7 +2,7 @@
 
 #include <boost/container/flat_map.hpp>
 #include <boost/serialization/split_member.hpp>
-
+#include <boost/algorithm/string/trim_all.hpp>
 
 namespace rstring
 {
@@ -25,23 +25,29 @@ namespace rstring
 		//////////////////////////////////////////////////////////////////////////
 
 		//get the numeric id of the unique format string
-		virtual size_t getId(const IdString & s) const
+		//string id is trimming when searching the numering id
+		size_t getId(const IdString & s) const
 		{
-			Map::const_iterator keyValuePair = _strings.find(s);
-			if (keyValuePair == _strings.end()) {
+			auto findResult = find(s);
+			if (findResult == _strings.end()) {
 				throw std::out_of_range("Error: string is absent in the resource. ");
-			} 
-			return keyValuePair - _strings.begin();
+			}
+			return findResult - _strings.begin();
 		}
 
 		//get the format string translation
-		virtual const TextString & getText(const IdString & s)	const
+		//string id is trimming when searching the text
+		const TextString & getText(const IdString & s)	const
 		{
-			return _strings.at(s);
+			auto findResult = find(s);
+			if (findResult == _strings.end()) {
+				throw std::out_of_range("Error: string is absent in the resource. ");
+			}
+			return findResult->second;
 		}
 
 		//get the unique format string using it's numeric id
-		virtual const IdString & getStringId(size_t id) const
+		const IdString & getStringId(size_t id) const
 		{
 			return (_strings.begin() + id)->first;
 		}
@@ -53,12 +59,22 @@ namespace rstring
 		virtual ~Resource(){}
 
 	protected:
-		//////////////////////////////////////////////////////////////////////////
-		//protected data
-		//////////////////////////////////////////////////////////////////////////
 
 		Map _strings;
 
+		typename Map::const_iterator find(const IdString & s) const
+		{
+			Map::const_iterator retval;
+			for (retval = _strings.begin(); retval < _strings.end(); retval++)
+			{
+				if ( boost::algorithm::trim_all_copy(retval->first) ==
+					boost::algorithm::trim_all_copy(s))
+				{
+					break;
+				}
+			}
+			return retval;
+		}
 
 		//////////////////////////////////////////////////////////////////////////
 		//boost serialization methods
@@ -81,6 +97,7 @@ namespace rstring
 		template<class Archive>
 		void load(Archive & ar, const unsigned int version)
 		{
+			_strings.clear();
 			Map::size_type stringsNumber;
 			ar & BOOST_SERIALIZATION_NVP(stringsNumber);
 			for (Map::size_type i = 0; i < stringsNumber; i++)

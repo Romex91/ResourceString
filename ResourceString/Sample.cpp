@@ -8,63 +8,78 @@
 #include "rstring.h"
 using namespace rstring;
 
-EditableResource<char, wchar_t> resource;
-
+//multiline strings are not recommended
 //unfortunately VS build log contains extra formatting spaces on the left side
-//do not use multi-lines strings until you are going to manually delete the spaces from the log file
-_rstr_t SourceCode = _rstr(R"d(
-#include <iostream>
-#include <string>
-#include <regex>
-#include"stringize.hpp"
-int main()
-{
-	std::string lines[] = {USE_STRING_CONSTANT("Roses are #ff0000"),
-		USE_STRING_CONSTANT("(violets are
-							#0000ff)"),
-							"all of my base are belong to you"
-};
-}
-)d");
+//boost xml archive also adds extra spaces to multiline strings
+//so if you do not want to face extra spaces after each line ending when using multiline strings
+//delete the spaces  manually from the resource
+
+//_rstr_t SourceCode = _rstr(R"d(
+//#include <iostream>
+//#include <string>
+//#include <regex>
+//#include"stringize.hpp"
+//int main()
+//{
+//	std::string lines[] = {USE_STRING_CONSTANT("Roses are #ff0000"),
+//		USE_STRING_CONSTANT("(violets are
+//							#0000ff)"),
+//							"all of my base are belong to you"
+//};
+//}
+//)d");
 
 
 void usageSample()
 {
-	std::wifstream xmlFs("strings.xml");
-	boost::archive::xml_wiarchive archive(xmlFs, boost::archive::no_header);
-	archive >> boost::serialization::make_nvp("strings", resource);;
-	_rstrw_t::setResource(resource);
+	//first we load a resource from an xml file
+	{
+		std::wifstream xmlFs("strings.xml");
+		boost::archive::xml_wiarchive archive(xmlFs, boost::archive::no_header);
+		archive >> boost::serialization::make_nvp("strings", _rstrw_t::resource());
+	}
 
-	std::cout << "strings before serialization:" << std::endl;
+	//_rstrw_t is a type with hidden constructors and public static 'Construct' methods
+	//so the only correct way to create a string is using macro _rstrw
+	//it would print the string at the compile time if PRINT_RESOURCE_STRINGS is defined
 	auto string1 = _rstrw("simple string without arguments");
 	auto string2 = _rstrw("string containing some arguments : int {0}, float {1}, string {2}", 2, 2.1f, "foo");
 	auto string3 = _rstrw(R"(string containing another resource string : "{0}")", string2);
 
-
-	std::wcout << string1.str() << std::endl;
-	std::wcout << string2.str() << std::endl;
-	std::wcout << string3.str() << std::endl;
+	//to get strings translated we call the str() method
+	std::wcout << _rstrw("strings before serialization: \n {0} \n{1} \n{2}\n\n", string1, string2, string3).str();
 	
+	//now we can serialize the strings. xml and binary archives are also available
 	std::wstringstream ss;
 	auto outputArchive = boost::archive::text_woarchive(ss);
 	outputArchive << string1;
 	outputArchive << string2;
 	outputArchive << string3;
 
-	std::wcout << "serialized strings:" << std::endl
-		<< ss.str() << std::endl;
+	//the format string constant will be replaced with it's resource id
+	//the arguments will be converted to strings
+	std::wcout << _rstrw("serialized strings:\n{0}\n", ss.str()).str();
 
+	//now we can switch the language
+	auto resourceBackup = _rstrw_t::resource();
+	try {
+		std::wifstream xmlFs("translated_strings.xml");
+		boost::archive::xml_wiarchive archive(xmlFs, boost::archive::no_header);
+		archive >> boost::serialization::make_nvp("strings", _rstrw_t::resource());
+	} catch (const std::exception & e) {
+		std::wcout << _rstrw("cannot change the resource file ({0}), lets continue with the same language\n", e.what()).str();
+		_rstrw_t::resource() = resourceBackup;
+	}
+
+	//deserialization
 	auto inputArcchive = boost::archive::text_wiarchive(ss);
 	_rstrw_t string4, string5, string6;
 	inputArcchive >> string4;
 	inputArcchive >> string5;
 	inputArcchive >> string6;
 
-	std::cout << "strings after serialization:" << std::endl;
-	std::wcout << string4.str() << std::endl;
-	std::wcout << string5.str() << std::endl;
-	std::wcout << string6.str() << std::endl;
-
+	//okey, here are the deserialized strings 
+	std::wcout << _rstrw("strings after deserialization: \n {0} \n{1} \n{2}\n", string4, string5, string6).str();
 }
 
 void updateResourceFile() 
@@ -76,10 +91,12 @@ void updateResourceFile()
 		boost::archive::xml_wiarchive archive(xmlFs, boost::archive::no_header);
 		archive >> boost::serialization::make_nvp("strings", oldResource);
 	} catch (std::exception ex) {
+		//in this method we cannot use resource strings because the resorce is not ready
+		//so using a raw string constant
 		std::cout << "cannot load old resource: " << ex.what() << std::endl;
 	}
 
-	//create a resource from build log
+	//create a resource using the build log
 	EditableResource<wchar_t, wchar_t> newResource;
 	std::wifstream buildLogFile(BOOST_PP_STRINGIZE(BUILD_LOG_FILE));
 	std::wstring buildLog((std::istreambuf_iterator<wchar_t>(buildLogFile)),
@@ -87,10 +104,17 @@ void updateResourceFile()
 	newResource.addStringsFromCompilerOutput(buildLog);
 
 	//merge resources
+	oldResource.update(newResource);
 	oldResource.merge(newResource);
+	oldResource.printOrphanedStrings(newResource);
 
-	//save updated resource
+	//suggest to save the updated resource
+	std::cout << "would you like to save the resource(y/n)?" << std::endl;
+	char c;
+	std::cin >> c;
+	if (c == 'y')
 	{
+		std::cout << std::endl << "saving the archive..." << std::endl;
 		std::wofstream xmlFs("strings.xml");
 		boost::archive::xml_woarchive archive(xmlFs, boost::archive::no_header);
 		archive << boost::serialization::make_nvp("strings", oldResource);

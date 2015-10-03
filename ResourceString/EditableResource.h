@@ -14,67 +14,70 @@ namespace rstring
 	{
 	public:
 		//run merging console dialog
+		//looks for strings with an identical key and different texts and suggest user to choose which one to save  
 		void merge(const EditableResource<_IdChar, _TextChar> & resource)
 		{
-			//first copy the strings which do not exist in this resource
-			std::cout << "New strings:" << std::endl;
-			for (auto rightStringPair : resource._strings) {
-				//if the string persists in this resource and is not empty than we continue
-				if (_strings.count(rightStringPair.first) != 0) {
-					if (_strings[rightStringPair.first] != TextString() || !std::is_same<_IdChar, _TextChar>::value) {
-						continue;
-					} else {
-						//erase the empty string
-						Resource::_strings.erase(rightStringPair.first);
-					}
-				}
-				if (rightStringPair.second == TextString()) {
-					//if the new string has an empty second value
-					//and if its left and right types are the same
-					//we use the left value to initialize the right one
-					typedef std::conditional<std::is_same<_IdChar, _TextChar>::value, DuplicatesPair<_IdChar>, Resource::Map::value_type>::type Value;
-					_strings.insert(print(Value(rightStringPair.first, TextString())));
-				} else {
-					_strings.insert(print(rightStringPair));
-				}
-
-			}
-
-			//then suggest what to do about conflicting strings
+			//suggest what to do about conflicting strings
 			std::cout << "Conflicting strings:" << std::endl;
-			std::copy_if(resource._strings.begin(), resource._strings.end(), std::inserter(_strings, _strings.end()),
-				[this](const Map::value_type & value) {
-				Map::iterator foundString;
-				if ((foundString = _strings.find(value.first)) != _strings.end()) {
-					if (foundString->second != value.second && value.second != TextString()) {
+			for (auto & rightStringsPair : resource._strings) {
+				Map::const_iterator leftStringsPair;
+				if ((leftStringsPair = find(rightStringsPair.first)) != _strings.end()) {
+					if (leftStringsPair->second != rightStringsPair.second && rightStringsPair.second != TextString()) {
 						const int saveLeft = 1, saveRight = 2;
 						int choise = 0;
 						while (choise != saveLeft && choise != saveRight)
 						{
+							std::cout << "two items has the same id and different texts" <<std::endl;
 							std::cout << "select the strings pair to save in the resource:" << std::endl << saveLeft;
-							print(*foundString);
-							print(value);
+							print(*leftStringsPair);
+							std::cout << saveRight;
+							print(rightStringsPair);
 							std::cin >> choise;
 						}
 
 						if (choise == saveRight)
 						{
-							return true;
+							_strings.erase(leftStringsPair);
+							_strings.insert(NewStringsPair(rightStringsPair));
 						}
 					}
-				}
-				return false;
-			});
-
-			//print the strings which exist in this resource but not in the right one
-			std::cout << "Orphaned strings:" << std::endl;
-			for (auto stringsPair : _strings) {
-				if (resource._strings.count(stringsPair.first) == 0) {
-					print(stringsPair);
 				}
 			}
 		}
 
+		//copy the strings which do not exist in this resource
+		void update(const EditableResource<_IdChar, _TextChar> & resource)
+		{
+			
+			std::cout << "New strings:" << std::endl;
+			for (auto rightStringPair : resource._strings) {
+				auto leftStringPair = find(rightStringPair.first);
+				if (leftStringPair != _strings.end()) {
+					//check if the currently persistent pair has an empty text value
+					//and we have a text on the right side
+					if (leftStringPair->second == TextString() && rightStringPair.second != TextString()) {
+						Resource::_strings.erase(leftStringPair);
+					}
+					else {
+						continue;
+					}
+				}
+				_strings.insert(print(NewStringsPair(rightStringPair)));
+			}
+		}
+
+		//print the strings which exist in this resource but not in the resource passed as an argument
+		void printOrphanedStrings(const EditableResource<_IdChar, _TextChar> & resource)
+		{
+			std::cout << "Orphaned strings:" << std::endl;
+			for (auto leftStringsPair : _strings) {
+				if (resource.find(leftStringsPair.first) == resource._strings.end()) {
+					print(leftStringsPair);
+				}
+			}
+		}
+
+		//parses the text to extract all the qouted strings
 		void addQoutedStringsFromText(const IdString & text)
 		{
 			std::match_results<IdString::const_iterator> m;
@@ -82,7 +85,7 @@ namespace rstring
 			while (std::regex_search(text, m, getQoutedStringRegex<_IdChar>())) {
 				for (auto x : m) {
 					if (_strings.count(x) == 0) {
-						_strings[x] = TextString();
+						_strings.insert(NewStringsPair(x, TextString()));
 					}
 				}
 
@@ -100,12 +103,16 @@ namespace rstring
 			{
 				postfixPosition = compilerOutput.find(postfix, prefixPosition);
 				IdString newString = compilerOutput.substr(prefixPosition + prefix.size(), postfixPosition - prefixPosition - prefix.size());
+
 				if (_strings.count(newString) == 0) {
-					_strings[newString] = TextString();
+					_strings.insert(NewStringsPair(newString, TextString()));
 				}
 			}
 		}
+
+
 	protected:
+
 		//////////////////////////////////////////////////////////////////////////
 		//type-specific helpers
 		//////////////////////////////////////////////////////////////////////////
@@ -139,35 +146,26 @@ namespace rstring
 			return std::pair<std::basic_string<wchar_t>, std::basic_string<wchar_t>>(BOOST_PP_WSTRINGIZE(RESOURCE_STRING_PREFIX), BOOST_PP_WSTRINGIZE(RESOURCE_STRING_POSTFIX));
 		}
 
-		static void print(std::string string)
-		{
-			std::cout << string;
-		}
-
-		static void print(std::wstring string)
-		{
-			std::wcout << string;
-		}
-
 		static typename const Map::value_type & print(typename const Map::value_type & value)
 		{
-			std::cout << "\"";
-			print(value.first);
-			std::cout << "\" - \"";
-			print(value.second);
-			std::cout << "\"" << std::endl;
+			std::wcout << "\"" << value.first << "\" - \"" << value.second << "\"" << std::endl;
 			return value;
 		}
-		template<class _Char>
-		class DuplicatesPair : public std::pair<std::basic_string<_Char>, std::basic_string<_Char>>
+
+		class DuplicatesPair : public std::pair<IdString, IdString>
 		{
 		public:
-			typedef std::basic_string<_Char> String;
-			typedef std::pair<String, String> Pair;
-			DuplicatesPair(const String & string,
-				const String & notUsing) : Pair(string, string)
+			typedef std::pair<IdString, IdString> Pair;
+			DuplicatesPair(const IdString & first,
+				const IdString & second) : Pair(first, second.size() == 0 ? first : second)
+			{}
+			DuplicatesPair(const Pair & pair) : DuplicatesPair(pair.first, pair.second)
 			{}
 		};
 
+		//a strings pair type to insert into the map
+		//if key and text types are the same it initializes the text with the key value
+		typedef typename std::conditional<std::is_same<_IdChar, _TextChar>::value,
+			DuplicatesPair, std::pair<IdString, TextString>>::type NewStringsPair;
 	};
 }
