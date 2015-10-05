@@ -15,31 +15,31 @@ namespace rstring
 		//type-specific helpers
 		//////////////////////////////////////////////////////////////////////////
 		template<class _Char>
-		std::basic_regex<_Char> getQoutedStringRegex();
+		inline std::basic_regex<_Char> getQoutedStringRegex();
 
 		template<>
-		std::basic_regex<char> getQoutedStringRegex<char>()
+		inline std::basic_regex<char> getQoutedStringRegex<char>()
 		{
 			return std::regex(R"d("(?:[^"\\]|\\.|\\\n|\\\r\n)*")d");
 		}
 
 		template<>
-		std::basic_regex<wchar_t> getQoutedStringRegex<wchar_t>()
+		inline std::basic_regex<wchar_t> getQoutedStringRegex<wchar_t>()
 		{
 			return std::wregex(LR"d("(?:[^"\\]|\\.|\\\n|\\\r\n)*")d");
 		}
 
 		template<class _Char>
-		std::pair<std::basic_string<_Char>, std::basic_string<_Char>> getPrefixPostfixPair();
+		inline std::pair<std::basic_string<_Char>, std::basic_string<_Char>> getPrefixPostfixPair();
 
 		template<>
-		std::pair<std::basic_string<char>, std::basic_string<char>> getPrefixPostfixPair<char>()
+		inline std::pair<std::basic_string<char>, std::basic_string<char>> getPrefixPostfixPair<char>()
 		{
 			return std::pair<std::basic_string<char>, std::basic_string<char>>(BOOST_PP_STRINGIZE(RESOURCE_STRING_PREFIX), BOOST_PP_STRINGIZE(RESOURCE_STRING_POSTFIX));
 		}
 
 		template<>
-		std::pair<std::basic_string<wchar_t>, std::basic_string<wchar_t>> getPrefixPostfixPair<wchar_t>()
+		inline std::pair<std::basic_string<wchar_t>, std::basic_string<wchar_t>> getPrefixPostfixPair<wchar_t>()
 		{
 			return std::pair<std::basic_string<wchar_t>, std::basic_string<wchar_t>>(BOOST_PP_WSTRINGIZE(RESOURCE_STRING_PREFIX), BOOST_PP_WSTRINGIZE(RESOURCE_STRING_POSTFIX));
 		}
