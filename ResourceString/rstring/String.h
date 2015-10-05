@@ -1,33 +1,32 @@
 #pragma once
+#include <sstream>
 #include <boost/container/flat_map.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
-#include <sstream>
+#include <boost/locale.hpp>
 #include "Resource.h"
 namespace rstring
 {
 	namespace helpers
 	{
 		template<class _SrcString, class _DestString >
-		_DestString convert(const _SrcString & string)
+		inline _DestString convert(const _SrcString & string)
 		{
 			return string;
 		}
 
 		template<>
-		std::string convert<std::wstring, std::string>(const std::wstring & string)
+		inline std::string convert<std::wstring, std::string>(const std::wstring & string)
 		{
-			return std::wstring_convert<std::codecvt<wchar_t, char, std::mbstate_t>>().to_bytes(string);
+			return boost::locale::conv::from_utf<wchar_t>(string, std::locale());
 		}
 
 		template<>
-		std::wstring convert<std::string, std::wstring>(const std::string & string)
+		inline std::wstring convert<std::string, std::wstring>(const std::string & string)
 		{
-			return std::wstring_convert<std::codecvt<wchar_t, char, std::mbstate_t>>().from_bytes(string);
+			return boost::locale::conv::to_utf<wchar_t>(string, std::locale());
 		}
-
-
 	}
 
 	//resource string

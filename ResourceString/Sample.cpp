@@ -3,6 +3,7 @@
 #include <boost/archive/xml_wiarchive.hpp>
 #include <boost/archive/text_woarchive.hpp>
 #include <boost/archive/text_wiarchive.hpp>
+#include <boost/log/trivial.hpp>
 
 #define PRINT_RESOURCE_STRINGS
 #include "rstring.h"
@@ -123,8 +124,11 @@ void updateResourceFile()
 
 int main()
 {
-	std::wcout << "User-preferred locale setting is " << std::locale("").name().c_str() << '\n';
-	std::locale::global(std::locale(""));
+#ifdef _MSC_VER
+	system("chcp 65001");
+#endif
+	boost::locale::generator gen;
+	std::locale::global( gen.generate(std::locale(), ""));
 	std::wcout.imbue(std::locale());
 
 	std::cout << R"(1 - update strings resource

@@ -15,19 +15,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="String.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EditableResource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="rstring.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Defines.h">
+    <ClInclude Include="rstring\Defines.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rstring\EditableResource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rstring\String.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rstring\Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
