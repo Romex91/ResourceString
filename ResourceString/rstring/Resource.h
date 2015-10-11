@@ -3,9 +3,31 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/algorithm/string/trim_all.hpp>
+#include <boost/locale.hpp>
 
 namespace rstring
 {
+	namespace helpers
+	{
+		template<class _SrcString, class _DestString >
+		inline _DestString convert(const _SrcString & string)
+		{
+			return string;
+		}
+
+		template<>
+		inline std::string convert<std::wstring, std::string>(const std::wstring & string)
+		{
+			return boost::locale::conv::from_utf<wchar_t>(string, std::locale());
+		}
+
+		template<>
+		inline std::wstring convert<std::string, std::wstring>(const std::string & string)
+		{
+			return boost::locale::conv::to_utf<wchar_t>(string, std::locale());
+		}
+	}
+
 	template<class _IdChar, class _TextChar>
 	class Resource
 	{
@@ -19,7 +41,11 @@ namespace rstring
 		typedef std::basic_string<_TextChar> TextString;
 		typedef boost::container::flat_map < IdString, TextString > Map;
 
-
+		enum class ErrorBehavior{
+			THROW_EXCEPTION,
+			RETURN_ERROR_TEXT,
+			CONVERT_ID_TEXT
+		};
 		//////////////////////////////////////////////////////////////////////////
 		//public methods needed by the String class
 		//////////////////////////////////////////////////////////////////////////
@@ -30,18 +56,29 @@ namespace rstring
 		{
 			auto findResult = find(s);
 			if (findResult == _strings.end()) {
-				throw std::out_of_range("Error: string is absent in the resource. ");
+				throw std::out_of_range(errorNoString);
 			}
 			return findResult - _strings.begin();
 		}
 
 		//get the format string translation
 		//string id is trimming when searching the text
-		const TextString & getText(const IdString & s)	const
+		TextString getText(const IdString & s)	const
 		{
 			auto findResult = find(s);
 			if (findResult == _strings.end()) {
-				throw std::out_of_range("Error: string is absent in the resource. ");
+				switch (_errorBehavior())
+				{
+				case ErrorBehavior::THROW_EXCEPTION: 
+					throw std::out_of_range(errorNoString);
+					break;
+				case  ErrorBehavior::RETURN_ERROR_TEXT:
+					return rstring::helpers::convert<std::string, TextString>(errorNoString);
+					break;
+				case ErrorBehavior::CONVERT_ID_TEXT:
+					return rstring::helpers::convert<IdString, TextString>(s);
+				}
+				
 			}
 			return findResult->second;
 		}
@@ -53,13 +90,36 @@ namespace rstring
 		}
 
 		//////////////////////////////////////////////////////////////////////////
+		//other public methods
+		//////////////////////////////////////////////////////////////////////////
+
+		static void setErrorBehavior(ErrorBehavior errorBehavior) 
+		{
+			_errorBehavior() = errorBehavior;
+		}
+
+		size_t hash() const
+		{
+			size_t result = 0;
+			std::hash<std::string> hash_fn;
+			for (auto & item : _strings)
+			{
+				result += hash_fn(item.first);
+			}
+			return result;
+		}
+		//////////////////////////////////////////////////////////////////////////
 		//destructor
 		//////////////////////////////////////////////////////////////////////////
 
 		virtual ~Resource(){}
 
 	protected:
-
+		std::string errorNoString = "Error: string is absent in the resource. ";
+		static ErrorBehavior & _errorBehavior() {
+			static ErrorBehavior retval = ErrorBehavior::RETURN_ERROR_TEXT;
+			return retval;
+		}
 		Map _strings;
 
 		typename Map::const_iterator find(const IdString & s) const

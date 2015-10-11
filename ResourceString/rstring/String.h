@@ -4,30 +4,10 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
-#include <boost/locale.hpp>
+
 #include "Resource.h"
 namespace rstring
 {
-	namespace helpers
-	{
-		template<class _SrcString, class _DestString >
-		inline _DestString convert(const _SrcString & string)
-		{
-			return string;
-		}
-
-		template<>
-		inline std::string convert<std::wstring, std::string>(const std::wstring & string)
-		{
-			return boost::locale::conv::from_utf<wchar_t>(string, std::locale());
-		}
-
-		template<>
-		inline std::wstring convert<std::string, std::wstring>(const std::string & string)
-		{
-			return boost::locale::conv::to_utf<wchar_t>(string, std::locale());
-		}
-	}
 
 	//resource string
 	//purposes of this class:
