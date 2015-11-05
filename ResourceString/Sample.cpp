@@ -52,7 +52,7 @@ void usageSample()
 	
 	//now we can serialize the strings. xml and binary archives are also available
 	std::wstringstream ss;
-	auto outputArchive = boost::archive::text_woarchive(ss);
+	boost::archive::text_woarchive outputArchive(ss);
 	outputArchive << string1;
 	outputArchive << string2;
 	outputArchive << string3;
@@ -73,7 +73,7 @@ void usageSample()
 	}
 
 	//deserialization
-	auto inputArcchive = boost::archive::text_wiarchive(ss);
+	boost::archive::text_wiarchive inputArcchive(ss);
 	_rstrw_t string4, string5, string6;
 	inputArcchive >> string4;
 	inputArcchive >> string5;
