@@ -6,6 +6,10 @@
 #include <boost/log/trivial.hpp>
 
 #define PRINT_RESOURCE_STRINGS
+//to prevent serialization of std::wstring, uncomment the macro definition below
+//in this case std::wstring arguments would be converted to std::string
+//#define RESOURCE_STRING_DISABLE_WSTRING_ARGUMENTS
+
 #include "rstring.h"
 using namespace rstring;
 
@@ -48,7 +52,7 @@ void usageSample()
 	auto string3 = _rstrw(R"(string containing another resource string : "{0}")", string2);
 
 	//to get strings translated we call the str() method
-	std::wcout << _rstrw("strings before serialization: \n {0} \n{1} \n{2}\n\n", string1, string2, string3).str();
+	BOOST_LOG_TRIVIAL(trace) << _rstrw("strings before serialization: \n {0} \n{1} \n{2}\n\n", string1, string2, string3).str();
 	
 	//now we can serialize the strings. xml and binary archives are also available
 	std::wstringstream ss;
@@ -59,7 +63,7 @@ void usageSample()
 
 	//the format string constant will be replaced with it's resource id
 	//the arguments will be converted to strings
-	std::wcout << _rstrw("serialized strings:\n{0}\n", ss.str()).str();
+	BOOST_LOG_TRIVIAL(trace) << _rstrw("serialized strings:\n{0}\n", ss.str()).str();
 
 	//now we can switch the language
 	auto resourceBackup = _rstrw_t::resource();
@@ -68,7 +72,7 @@ void usageSample()
 		boost::archive::xml_wiarchive archive(xmlFs, boost::archive::no_header);
 		archive >> boost::serialization::make_nvp("strings", _rstrw_t::resource());
 	} catch (const std::exception & e) {
-		std::wcout << _rstrw("cannot change the resource file ({0}), lets continue with the same language\n", e.what()).str();
+		BOOST_LOG_TRIVIAL(trace) << _rstrw("cannot change the resource file ({0}), lets continue with the same language\n", e.what()).str();
 		_rstrw_t::resource() = resourceBackup;
 	}
 
@@ -80,7 +84,7 @@ void usageSample()
 	inputArcchive >> string6;
 
 	//okey, here are the deserialized strings 
-	std::wcout << _rstrw("strings after deserialization: \n {0} \n{1} \n{2}\n", string4, string5, string6).str();
+	BOOST_LOG_TRIVIAL(trace) << _rstrw("strings after deserialization: \n {0} \n{1} \n{2}\n", string4, string5, string6).str();
 }
 
 void updateResourceFile() 

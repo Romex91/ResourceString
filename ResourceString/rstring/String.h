@@ -4,6 +4,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
+#include <type_traits>
+
 
 #include "Resource.h"
 namespace rstring
@@ -65,19 +67,14 @@ namespace rstring
 		TextString str()const
 		{
 			TextString format = resource().getText(_idString);
-			for (auto simpleArgument : _simpleArguments) 
-			{
-				TextStringStream ss;
-				ss << "{" << simpleArgument.first << "}";
-				boost::replace_all(format, ss.str(), simpleArgument.second);
-			}
-
-			for (auto nestedStringArgument : _nestedStringArguments)
-			{
-				TextStringStream ss;
-				ss << "{" << nestedStringArgument.first << "}";
-				boost::replace_all(format, ss.str(), nestedStringArgument.second.str());
-			}
+			
+			replaceArguments<This>(format, _nestedStringArguments);
+			replaceArguments< std::string>(format, _stringArguments);
+			replaceArguments<double>(format, _floatingPointArguments);
+			replaceArguments<long long>(format, _integerArguments);
+#if !defined(RESOURCE_STRING_DISABLE_WSTRING_ARGUMENTS)
+			replaceArguments<std::wstring>(format, _wstringArguments);
+#endif
 			return format;
 		}
 		
@@ -89,6 +86,8 @@ namespace rstring
 		}
 
 	protected:
+
+
 		//////////////////////////////////////////////////////////////////////////
 		//protected data
 		//////////////////////////////////////////////////////////////////////////
@@ -97,9 +96,13 @@ namespace rstring
 		//contains arguments of the same type
 		std::map<size_t, This> _nestedStringArguments;
 
-		//contains arguments of other types converted to the type TextString
-		std::map<size_t, TextString> _simpleArguments;
+		std::map<size_t, std::string> _stringArguments;
+		std::map<size_t, double> _floatingPointArguments;
+		std::map<size_t, long long> _integerArguments;
 
+#if !defined(RESOURCE_STRING_DISABLE_WSTRING_ARGUMENTS)
+		std::map<size_t, std::wstring> _wstringArguments;
+#endif
 		//unique format string
 		IdString _idString;
 
@@ -143,9 +146,12 @@ namespace rstring
 		template <typename Argument>
 		void initializeArguments(size_t index, const Argument & argument)
 		{
-			TextStringStream ss;
-			ss << argument;
-			_simpleArguments[index] = ss.str();
+			static_assert(std::is_arithmetic<Argument>::value, "unsupported argument type. You can pass arithmetic types, std::string, std::wstring and rstring::String.");
+			if (std::is_integral<Argument>::value) {
+				_integerArguments[index] = static_cast<long long>(argument);
+			} else {
+				_floatingPointArguments[index] = static_cast<double>(argument);
+			}
 		}
 
 		//save a nested resource string as an argument
@@ -154,10 +160,67 @@ namespace rstring
 			_nestedStringArguments[index] = argument;
 		}
 
-		void initializeArguments(size_t index, const IdString & argument)
+		void initializeArguments(size_t index, const std::string & argument)
 		{
-			_simpleArguments[index] = helpers::convert<IdString, TextString>(argument);
+			_stringArguments[index] = argument;
 		}
+
+		void initializeArguments(size_t index, const char * argument)
+		{
+			initializeArguments(index, std::string(argument));
+		}
+
+		void initializeArguments(size_t index, const wchar_t * argument)
+		{
+			initializeArguments(index, std::wstring(argument));
+		}
+
+		void initializeArguments(size_t index, const std::wstring & argument)
+		{
+#if !defined(RESOURCE_STRING_DISABLE_WSTRING_ARGUMENTS)
+			_wstringArguments[index] = argument;
+#else
+			_stringArguments[index] = helpers::convert<std::string, std::wstring>(argument)
+#endif
+		}
+
+		//////////////////////////////////////////////////////////////////////////
+		//methods to convert arguments to TextString when str() is called
+		//////////////////////////////////////////////////////////////////////////
+		template<class T>
+		static TextString convertToTextString(const T & value)
+		{
+			TextStringStream ss;
+			ss << value;
+			return ss.str();
+		}
+
+		static TextString convertToTextString(const std::string & value)
+		{
+			return helpers::convert<std::string, TextString >(value);
+		}
+
+		static TextString convertToTextString(const std::wstring & value)
+		{
+			return helpers::convert<std::wstring, TextString>(value);
+		}
+
+		static TextString convertToTextString(const This & value)
+		{
+			return value.str();
+		}
+
+		template < class T >
+		static void replaceArguments(TextString & text, const std::map<size_t, T> & argumentsList)
+		{
+			for (auto simpleArgument : argumentsList)
+			{
+				TextStringStream ss;
+				ss << "{" << simpleArgument.first << "}";
+				boost::replace_all(text, ss.str(), convertToTextString(simpleArgument.second));
+			}
+		}
+
 		//////////////////////////////////////////////////////////////////////////
 		//boost serialization methods
 		//////////////////////////////////////////////////////////////////////////
@@ -168,8 +231,15 @@ namespace rstring
 		{
 			auto id = resource().getId(_idString);
 			ar << BOOST_SERIALIZATION_NVP(id);
-			ar << BOOST_SERIALIZATION_NVP(_simpleArguments);
 			ar << BOOST_SERIALIZATION_NVP(_nestedStringArguments);
+
+			ar << BOOST_SERIALIZATION_NVP(_stringArguments);
+			ar << BOOST_SERIALIZATION_NVP(_floatingPointArguments);
+			ar << BOOST_SERIALIZATION_NVP(_integerArguments);
+
+#if !defined(RESOURCE_STRING_DISABLE_WSTRING_ARGUMENTS)
+			ar << BOOST_SERIALIZATION_NVP(_wstringArguments);
+#endif
 		}
 
 		template<class Archive>
@@ -178,8 +248,15 @@ namespace rstring
 			size_t id;
 			ar >> BOOST_SERIALIZATION_NVP(id);
 			_idString = resource().getStringId(id);
-			ar >> BOOST_SERIALIZATION_NVP(_simpleArguments);
+
 			ar >> BOOST_SERIALIZATION_NVP(_nestedStringArguments);
+			ar >> BOOST_SERIALIZATION_NVP(_stringArguments);
+			ar >> BOOST_SERIALIZATION_NVP(_floatingPointArguments);
+			ar >> BOOST_SERIALIZATION_NVP(_integerArguments);
+
+#if !defined(RESOURCE_STRING_DISABLE_WSTRING_ARGUMENTS)
+			ar >> BOOST_SERIALIZATION_NVP(_wstringArguments);
+#endif
 		}
 		BOOST_SERIALIZATION_SPLIT_MEMBER();
 
