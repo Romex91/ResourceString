@@ -146,7 +146,8 @@ namespace rstring
 		template <typename Argument>
 		void initializeArguments(size_t index, const Argument & argument)
 		{
-			static_assert(std::is_arithmetic<Argument>::value, "unsupported argument type. You can pass arithmetic types, std::string, std::wstring and rstring::String.");
+			static_assert(std::is_arithmetic<Argument>::value || std::is_enum<Argument>::value, 
+				"unsupported argument type.");
 			if (std::is_integral<Argument>::value) {
 				_integerArguments[index] = static_cast<long long>(argument);
 			} else {
