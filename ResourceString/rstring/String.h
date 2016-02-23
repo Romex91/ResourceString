@@ -14,7 +14,7 @@ namespace rstring
 	//resource string
 	//purposes of this class:
 	// - simple text formatting
-	// - easy language selection
+	// - any time language selection
 	// - serialization using numeric ids
 	// - avoid non-ASCII characters in the source code
 	//when using this class in a client-server application it is important to keep the resources identical on the both sides
@@ -47,11 +47,6 @@ namespace rstring
 		static This Construct(const IdString & idString, Args ... args)
 		{
 			return This(idString, args...);
-		}
-
-		static This Construct(const IdString & idString)
-		{
-			return This(idString);
 		}
 
 		String() = default;
@@ -93,7 +88,6 @@ namespace rstring
 		//////////////////////////////////////////////////////////////////////////
 
 		//nested resource string
-		//contains arguments of the same type
 		std::map<size_t, This> _nestedStringArguments;
 
 		std::map<size_t, std::string> _stringArguments;
@@ -122,7 +116,8 @@ namespace rstring
 		template < typename... Args>
 		explicit String(const IdString & idString, Args ... args) : String(idString)
 		{
-			initializeArguments(0, args...);
+			int i = 0;
+			int dummy[sizeof...(Args)]  = { (initializeArguments(i++, args), 1)... };
 		}
 
 		//constructor without arguments
@@ -134,13 +129,6 @@ namespace rstring
 		//methods used in constructors
 		//////////////////////////////////////////////////////////////////////////
 
-		//save arguments recursively
-		template < typename First, typename... Other>
-		void initializeArguments(size_t index, const First & first, Other ... other)
-		{
-			initializeArguments(index++, first);
-			initializeArguments(index, other...);
-		}
 
 		//save an argument of a simple type
 		template <typename Argument>
@@ -148,10 +136,10 @@ namespace rstring
 		{
 			static_assert(std::is_arithmetic<Argument>::value || std::is_enum<Argument>::value, 
 				"unsupported argument type.");
-			if (std::is_integral<Argument>::value) {
-				_integerArguments[index] = static_cast<long long>(argument);
-			} else {
+			if (std::is_floating_point<Argument>::value) {
 				_floatingPointArguments[index] = static_cast<double>(argument);
+			} else {
+				_integerArguments[index] = static_cast<long long>(argument);
 			}
 		}
 
