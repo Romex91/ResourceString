@@ -117,7 +117,9 @@ namespace rstring
 		explicit String(const IdString & idString, Args ... args) : String(idString)
 		{
 			int i = 0;
-			int dummy[sizeof...(Args)]  = { (initializeArguments(i++, args), 1)... };
+            int dummy[sizeof...(Args)]  = { (initializeArguments(i++, args), 1)... };
+            //getting rid of set but unused warning
+            dummy[0] = dummy[0];
 		}
 
 		//constructor without arguments
@@ -216,7 +218,7 @@ namespace rstring
 		friend class boost::serialization::access;
 
 		template<class Archive>
-		void save(Archive & ar, const unsigned int version) const
+        void save(Archive & ar, const unsigned int) const
 		{
 			auto id = resource().getId(_idString);
 			ar << BOOST_SERIALIZATION_NVP(id);
@@ -232,7 +234,7 @@ namespace rstring
 		}
 
 		template<class Archive>
-		void load(Archive & ar, const unsigned int version)
+        void load(Archive & ar, const unsigned int)
 		{
 			size_t id;
 			ar >> BOOST_SERIALIZATION_NVP(id);

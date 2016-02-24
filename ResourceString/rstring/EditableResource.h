@@ -69,7 +69,7 @@ namespace rstring
 			std::cout << "Conflicting strings:" << std::endl;
 			for (auto & rightStringsPair : resource._strings) {
 				typename Map::const_iterator leftStringsPair;
-				if ((leftStringsPair = find(rightStringsPair.first)) != this->_strings.end()) {
+                if ((leftStringsPair = this->find(rightStringsPair.first)) != this->_strings.end()) {
 					if (leftStringsPair->second != rightStringsPair.second && rightStringsPair.second != TextString()) {
 						const int saveLeft = 1, saveRight = 2;
 						int choise = 0;
@@ -99,7 +99,7 @@ namespace rstring
 			
 			std::cout << "New strings:" << std::endl;
 			for (auto rightStringPair : resource._strings) {
-				auto leftStringPair = find(rightStringPair.first);
+                auto leftStringPair = this->find(rightStringPair.first);
 				if (leftStringPair != this->_strings.end()) {
 					//check if the currently persistent pair has an empty text value
 					//and we have a text on the right side

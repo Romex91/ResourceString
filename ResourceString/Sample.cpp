@@ -8,6 +8,7 @@
 #define PRINT_RESOURCE_STRINGS
 //to prevent serialization of std::wstring, uncomment the macro definition below
 //in this case std::wstring arguments would be converted to std::string
+//this macro is usefull when compiling client and server on different platforms (i.e. windows - linux)
 //#define RESOURCE_STRING_DISABLE_WSTRING_ARGUMENTS
 
 #include "rstring.h"
@@ -103,7 +104,7 @@ void updateResourceFile()
 
 	//create a resource using the build log
 	EditableResource<wchar_t, wchar_t> newResource;
-	std::wifstream buildLogFile(BOOST_PP_STRINGIZE(BUILD_LOG_FILE));
+    std::wifstream buildLogFile("build.log");
 	std::wstring buildLog((std::istreambuf_iterator<wchar_t>(buildLogFile)),
 		std::istreambuf_iterator<wchar_t>());
 	newResource.addStringsFromCompilerOutput(buildLog);
@@ -129,11 +130,12 @@ void updateResourceFile()
 int main()
 {
 #ifdef _MSC_VER
-	system("chcp 65001");
+    system("chcp 65001");
 #endif
-	boost::locale::generator gen;
-	std::locale::global( gen.generate(std::locale(), ""));
-	std::wcout.imbue(std::locale());
+
+    boost::locale::generator gen;
+    std::locale::global( gen.generate(std::locale(), ""));
+    std::wcout.imbue(std::locale());
 
 	std::cout << R"(1 - update strings resource
 2 - run usage sample

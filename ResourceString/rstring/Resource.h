@@ -144,7 +144,7 @@ namespace rstring
 
 		//boost contains no serialization for flat_map =(
 		template<class Archive>
-		void save(Archive & ar, const unsigned int version) const
+        void save(Archive & ar, const unsigned int) const
 		{
 			size_t stringsNumber = _strings.size();
 			ar & BOOST_SERIALIZATION_NVP(stringsNumber);
@@ -155,7 +155,7 @@ namespace rstring
 		}
 
 		template<class Archive>
-		void load(Archive & ar, const unsigned int version)
+        void load(Archive & ar, const unsigned int)
 		{
 			_strings.clear();
 			size_t stringsNumber;
